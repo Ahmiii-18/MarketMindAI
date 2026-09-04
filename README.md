@@ -38,5 +38,5 @@ MarketMind AI is an autonomous business research agent designed to generate mana
 
 1. **Clone the repository**:
    ```bash
-   git clone [https://github.com/](https://github.com/)<your-username>/MarketMind-AI.git
+   git clone [https://github.com/](https://github.com/)<Ahmiii-18>/MarketMind-AI.git
    cd MarketMind-AI
