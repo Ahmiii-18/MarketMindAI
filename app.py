@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 import streamlit as st
+import pandas as pd
 from openai import OpenAI
 
 # 1. Streamlit Page Configuration
@@ -43,7 +44,69 @@ def execute_llm_step(client: OpenAI, model: str, system_prompt: str, user_prompt
     return response.choices[0].message.content, cost
 
 
-# 3. Session State Initialization
+# 3. Helper Functions for Formatting Raw JSON Data
+def render_executive_summary(summary_data):
+    """Renders executive summary dict as clean Markdown and Tables."""
+    if isinstance(summary_data, str):
+        st.info(summary_data)
+        return
+
+    if isinstance(summary_data, dict):
+        if "vendor_options" in summary_data:
+            st.markdown("#### Vendor Comparison")
+            vendors = summary_data["vendor_options"]
+            if isinstance(vendors, list):
+                # Convert list of vendor dicts to a clean DataFrame table
+                formatted_vendors = []
+                for v in vendors:
+                    features = ", ".join(v.get("features", [])) if isinstance(v.get("features"), list) else v.get("features", "")
+                    formatted_vendors.append({
+                        "Vendor": v.get("name", "N/A"),
+                        "Pricing Model": v.get("pricing_model", "N/A"),
+                        "Key Features": features
+                    })
+                st.table(pd.DataFrame(formatted_vendors))
+
+        if "pricing_models" in summary_data:
+            st.markdown("#### Key Pricing Models")
+            for model in summary_data["pricing_models"]:
+                st.markdown(f"* {model}")
+
+
+def render_market_overview(overview_data):
+    """Renders market overview dict as readable sections and bullet points."""
+    if isinstance(overview_data, str):
+        st.write(overview_data)
+        return
+
+    if isinstance(overview_data, dict):
+        if "key_market_players" in overview_data:
+            st.markdown("#### Key Market Players")
+            players = overview_data["key_market_players"]
+            if isinstance(players, list):
+                st.write(", ".join(players))
+
+        if "industry_dynamics" in overview_data:
+            st.markdown("#### Industry Dynamics")
+            dynamics = overview_data["industry_dynamics"]
+            
+            if "growth_drivers" in dynamics:
+                st.markdown("**Growth Drivers:**")
+                for item in dynamics["growth_drivers"]:
+                    st.markdown(f"* {item}")
+
+            if "challenges" in dynamics:
+                st.markdown("**Challenges:**")
+                for item in dynamics["challenges"]:
+                    st.markdown(f"* {item}")
+
+            if "trends" in dynamics:
+                st.markdown("**Trends:**")
+                for item in dynamics["trends"]:
+                    st.markdown(f"* {item}")
+
+
+# 4. Session State Initialization
 if "run_id" not in st.session_state:
     st.session_state.run_id = None
 if "total_cost" not in st.session_state:
@@ -56,7 +119,7 @@ if "is_approved" not in st.session_state:
     st.session_state.is_approved = False
 
 
-# 4. UI Header Component
+# 5. UI Header Component
 st.title("MarketMind AI — Market Intelligence Agent")
 st.caption("Autonomous AI research agent with automated quality control and human-in-the-loop approval.")
 
@@ -66,7 +129,7 @@ user_request = st.text_area("Research Objective / Request:", value=default_reque
 run_button = st.button("Run Research Pipeline", type="primary")
 
 
-# 5. Research Pipeline Execution Loop
+# 6. Pipeline Execution
 if run_button:
     st.session_state.run_id = f"RUN-{uuid.uuid4().hex[:6].upper()}"
     st.session_state.total_cost = 0.0
@@ -79,50 +142,31 @@ if run_button:
         model = "gpt-4o"
         
         with st.spinner("Executing bounded research agent pipeline..."):
-            # Step 1: Intake & Planning Call
             plan_sys = "You are a market intelligence agent. Decompose the request into sub-questions."
             _, cost1 = execute_llm_step(client, model, plan_sys, user_request)
             st.session_state.total_cost += cost1
             
-            # Step 2: Synthesis & Report Generation
             report_sys = (
-                "You are an expert market analyst. Generate a structured JSON response with keys:\n"
-                "- 'executive_summary': A concise summary of vendor options and pricing models.\n"
-                "- 'market_overview': A broader overview of key market players and industry dynamics."
+                "You are an expert market analyst. Return a JSON object with two keys:\n"
+                "- 'executive_summary': containing 'vendor_options' (list of objects with name, features, pricing_model) and 'pricing_models' (list of strings).\n"
+                "- 'market_overview': containing 'key_market_players' (list of names) and 'industry_dynamics' (object with growth_drivers, challenges, trends lists)."
             )
             report_raw, cost2 = execute_llm_step(client, model, report_sys, user_request)
             st.session_state.total_cost += cost2
             
             try:
-                st.session_state.report_data = json.loads(report_raw)
+                # Strip markdown JSON blocks if present
+                clean_json_str = report_raw.replace("```json", "").replace("```", "").strip()
+                st.session_state.report_data = json.loads(clean_json_str)
             except json.JSONDecodeError:
                 st.session_state.report_data = {
                     "executive_summary": report_raw[:300],
                     "market_overview": report_raw[300:]
                 }
             st.session_state.confidence_level = "HIGH"
-    else:
-        # Fallback Simulation Mode if no API key is provided
-        st.session_state.total_cost = 0.0038
-        st.session_state.confidence_level = "HIGH"
-        st.session_state.report_data = {
-            "executive_summary": (
-                "The market for AI-powered customer support software is characterized by a range of offerings "
-                "from vendors with varying pricing models and feature sets. Vendor Alpha offers an entry-level "
-                "solution with basic NLP routing at a competitive price point, while Vendor Beta targets "
-                "enterprise clients with advanced workflow automation capabilities. Vendor Gamma's pricing strategy "
-                "is less transparent, requiring direct contact for quotes."
-            ),
-            "market_overview": (
-                "The AI-powered customer support software market is expanding as businesses seek to enhance "
-                "customer service efficiency and effectiveness. Key players in the market include Vendor Alpha, "
-                "Vendor Beta, and Vendor Gamma, each offering distinct solutions tailored to different segments "
-                "of the market."
-            )
-        }
 
 
-# 6. Output Rendering and Human Approval Gate
+# 7. Output Rendering
 if st.session_state.report_data and st.session_state.run_id:
     st.markdown("---")
     st.header("Human Approval Gate")
@@ -139,10 +183,10 @@ if st.session_state.report_data and st.session_state.run_id:
         st.markdown(f"### {st.session_state.confidence_level}")
         
     st.subheader("Executive Summary")
-    st.info(st.session_state.report_data.get("executive_summary", ""))
+    render_executive_summary(st.session_state.report_data.get("executive_summary", ""))
     
     st.subheader("Market Overview")
-    st.write(st.session_state.report_data.get("market_overview", ""))
+    render_market_overview(st.session_state.report_data.get("market_overview", ""))
     
     st.markdown("---")
     btn_col1, btn_col2 = st.columns([1, 4])
