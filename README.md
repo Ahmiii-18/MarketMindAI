@@ -1,10 +1,14 @@
 # MarketMind AI — Market Intelligence Agent
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://marketmindaii.streamlit.app/)
+[![Watch Demo](https://img.shields.io/badge/🎥_Watch_Video_Demo-Google_Drive-red.svg)](https://drive.google.com/file/d/1gdoTKyouWQS24yYkrlW8j0OtZdHCTs8u/view?usp=sharing)
+[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-MarketMind AI is an autonomous business research agent designed to generate management consultancy market intelligence briefs. Built directly in native Python, it features schema-validated tool calling, epistemic evidence tracking, real-time API cost calculation, and a Human Approval Gate prior to final report export.
+**MarketMind AI** is an autonomous business research agent designed to generate management consultancy market intelligence briefs. Built directly in native Python, it features schema-validated tool calling, epistemic evidence tracking, real-time API cost calculation, and a Human Approval Gate prior to final report export.
 
-🚀 **Live Demo**: [marketmindaii.streamlit.app](https://marketmindaii.streamlit.app/)
+🌐 **Live Demo:** [marketmindaii.streamlit.app](https://marketmindaii.streamlit.app/)  
+🎥 **Video Walkthrough:** [Google Drive Demo](https://drive.google.com/file/d/1gdoTKyouWQS24yYkrlW8j0OtZdHCTs8u/view?usp=sharing)
 
 ---
 
